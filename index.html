@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ironman Hawaii 2026 | Training Dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;500&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet">
+<style>
+@media (min-width: 1024px) {
+  body { height: 100vh; overflow: hidden; }
+  main { height: calc(100vh - 175px); }
+}
+body { background: radial-gradient(circle at top left, #1e293b, #0f172a); color: #f8fafc; font-family: 'Outfit', sans-serif; margin: 0; display: flex; flex-direction: column; }
+.glass-card { background: rgba(30, 41, 59, 0.4); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+.chart-bar { transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); border-radius: 6px 6px 0 0; }
+.marquee-content { display: inline-block; animation: marquee 110s linear infinite; color: #e2e8f0; }
+@keyframes marquee { 0% { transform: translateX(0%); } 100% { transform: translateX(-250%); } }
+.insight-text { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #cbd5e1; }
+.progress-label { font-size: 10px; font-weight: 800; font-family: 'JetBrains Mono'; }
+.goal-glow {
+  box-shadow: 0 0 10px var(--glow-color, rgba(255,255,255,0.35)),
+              0 0 22px var(--glow-color, rgba(255,255,255,0.25));
+}
+
+/* Block volume typography */
+.blockvol-prev { font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: 12px; color: #cbd5e1; }
+.blockvol-next { font-family: 'JetBrains Mono', monospace; font-weight: 900; font-size: 16px; color: #e2e8f0; }
+
+/* Weekly bar labels */
+.week-delta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+.week-vol-inbar{
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 900;
+  color: #e2e8f0;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 6px;
+  z-index: 2;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.45);
+}
+
+/* Section header styling (neutral highlight) */
+.section-hdr{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+  color: #e5e7eb; /* neutral, not tied to data colors */
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+/* Glow header (use this; no pill) */
+.section-glow{
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #e5e7eb;
+  text-shadow:
+    0 0 8px rgba(255,255,255,0.18),
+    0 0 20px rgba(255,255,255,0.10);
+}
+</style>
+</head>
+<body class="p-4 md:p-6 gap-4">
+
+<header class="flex flex-nowrap justify-between items-center border-b border-white/5 pb-4 shrink-0 overflow-hidden">
+  <button type="button"
+          onclick="location.reload()"
+          class="flex items-center gap-6 shrink-0 text-left cursor-pointer select-none"
+          aria-label="Refresh dashboard">
+    <svg class="w-12 h-12 md:w-16 md:h-16 fill-amber-500 drop-shadow-[0_0_12px_rgba(245,158,11,0.6)]" viewBox="0 0 100 100">
+      <circle cx="50" cy="22" r="14"/><path d="M25 90h12V55c0-4 3-7 7-7h12c4 0 7 3 7 7v35h12V55c0-10-8-18-18-18H43c-10 0-18 8-18 18v35z"/>
+    </svg>
+    <div>
+      <div class="flex items-center gap-2">
+        <h1 class="text-3xl md:text-5xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-amber-400 to-orange-500 uppercase leading-none">ROAD TO HAWAII</h1>
+      </div>
+    </div>
+  </button>
+
+  <div class="flex-grow mx-8 overflow-hidden whitespace-nowrap hidden lg:block">
+    <div id="dynamic-marquee" class="marquee-content font-serif italic text-base uppercase tracking-[0.2em] opacity-90"></div>
+  </div>
+
+  <div class="flex gap-4 shrink-0">
+    <a href="https://www.genevetriathlon.ch/races/half" target="_blank" class="glass-card px-5 py-2 rounded-2xl border border-blue-500/30 text-center min-w-[95px]">
+      <span id="latour-countdown" class="block text-2xl font-black text-blue-400">--</span>
+      <span class="text-slate-500 text-[8px] font-bold uppercase">Geneva</span>
+    </a>
+    <a href="https://www.ironman.com/races/im-world-championship-kona/course" target="_blank" class="glass-card px-5 py-2 rounded-2xl border border-amber-500/30 text-center min-w-[95px]">
+      <span id="countdown" class="block text-2xl font-black text-amber-500">--</span>
+      <span class="text-slate-500 text-[8px] font-bold uppercase">Kona</span>
+    </a>
+  </div>
+</header>
+
+<main class="flex-grow flex flex-col gap-4 overflow-hidden">
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 h-1/2 min-h-0">
+    <div class="glass-card p-5 rounded-3xl lg:col-span-2 flex flex-col min-h-0">
+      <div class="flex justify-between items-center mb-2 shrink-0">
+        <h3 class="font-bold text-xl uppercase tracking-tight" id="block-title">Block ---</h3>
+        <span id="phase-label" class="bg-amber-500/10 text-amber-400 px-3 py-1 rounded-full text-[10px] font-bold font-mono tracking-widest uppercase"></span>
+      </div>
+      <div class="flex-grow flex items-end justify-around px-4 gap-4 border-b border-white/5 min-h-0" id="block-chart"></div>
+      <div id="block-weeks-labels" class="flex justify-around text-[10px] text-slate-500 font-bold uppercase py-2 shrink-0"></div>
+    </div>
+
+    <div class="glass-card p-5 rounded-3xl border-l-4 border-zinc-500 flex flex-col min-h-0">
+      <!-- INSIGHTS header: glow, no pill -->
+      <div class="mb-3">
+        <span class="section-glow">Insights</span>
+      </div>
+
+      <div class="grid grid-cols-2 gap-x-8 gap-y-3 flex-grow min-h-0">
+        <div class="min-w-0">
+          <p class="text-[8px] text-slate-500 font-black uppercase tracking-wider mb-1">Execution</p>
+          <div class="flex items-center gap-2">
+            <p id="insight-exec" class="insight-text uppercase font-bold leading-tight text-slate-400 truncate">Awaiting Data</p>
+            <span class="relative group shrink-0">
+              <span class="material-symbols-outlined text-[16px] text-slate-500 group-hover:text-slate-200 cursor-help">info</span>
+              <span class="pointer-events-none absolute left-1/2 -translate-x-1/2 top-6 z-20 w-64 opacity-0 group-hover:opacity-100 transition bg-black/90 text-[9px] text-slate-200 px-3 py-2 rounded-xl border border-white/10">Accountability: compares actual total to planned total.</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="min-w-0">
+          <p class="text-[8px] text-slate-500 font-black uppercase tracking-wider mb-1">4W Baseline</p>
+          <div class="flex items-center gap-2">
+            <p id="insight-baseline" class="insight-text uppercase font-bold leading-tight text-slate-400 truncate">Awaiting Data</p>
+            <span class="relative group shrink-0">
+              <span class="material-symbols-outlined text-[16px] text-slate-500 group-hover:text-slate-200 cursor-help">info</span>
+              <span class="pointer-events-none absolute left-1/2 -translate-x-1/2 top-6 z-20 w-64 opacity-0 group-hover:opacity-100 transition bg-black/90 text-[9px] text-slate-200 px-3 py-2 rounded-xl border border-white/10">Typical weekly training volume over past 4 weeks.</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="min-w-0">
+          <p class="text-[8px] text-slate-500 font-black uppercase tracking-wider mb-1">Weekly Load Trend</p>
+          <div class="flex items-center gap-2">
+            <p id="insight-wow" class="insight-text uppercase font-bold leading-tight text-slate-400 truncate">Awaiting Data</p>
+            <span class="relative group shrink-0">
+              <span class="material-symbols-outlined text-[16px] text-slate-500 group-hover:text-slate-200 cursor-help">info</span>
+              <span class="pointer-events-none absolute left-1/2 -translate-x-1/2 top-6 z-20 w-64 opacity-0 group-hover:opacity-100 transition bg-black/90 text-[9px] text-slate-200 px-3 py-2 rounded-xl border border-white/10">Week-over-week change in total load. Target ≈ +10%.</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="min-w-0">
+          <p class="text-[8px] text-slate-500 font-black uppercase tracking-wider mb-1">Load Status</p>
+          <div class="flex items-center gap-2">
+            <p id="insight-acr" class="insight-text uppercase font-bold leading-tight text-slate-400 truncate">Awaiting Data</p>
+            <span class="relative group shrink-0">
+              <span class="material-symbols-outlined text-[16px] text-slate-500 group-hover:text-slate-200 cursor-help">info</span>
+              <span class="pointer-events-none absolute left-1/2 -translate-x-1/2 top-6 z-20 w-72 opacity-0 group-hover:opacity-100 transition bg-black/90 text-[9px] text-slate-200 px-3 py-2 rounded-xl border border-white/10">Injury risk signal (ACR) vs baseline.</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="min-w-0 col-span-2">
+          <p class="text-[8px] text-slate-500 font-black uppercase tracking-wider mb-1">Discipline Balance</p>
+          <div class="flex items-center gap-2">
+            <p id="insight-balance" class="insight-text uppercase font-bold leading-tight text-slate-400 truncate">Awaiting Data</p>
+            <span class="relative group shrink-0">
+              <span class="material-symbols-outlined text-[16px] text-slate-500 group-hover:text-slate-200 cursor-help">info</span>
+              <span class="pointer-events-none absolute left-1/2 -translate-x-1/2 top-6 z-20 w-64 opacity-0 group-hover:opacity-100 transition bg-black/90 text-[9px] text-slate-200 px-3 py-2 rounded-xl border border-white/10">Swim/Bike/Run split vs your norm.</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-3 mt-3 border-t border-white/5 shrink-0">
+        <!-- Block Volume header: glow, no pill -->
+        <div class="mb-3">
+          <span class="section-glow">Block Volume</span>
+        </div>
+
+        <div id="block-total-vol" class="grid grid-cols-3 gap-6 items-end">
+          <div class="text-left">
+            <div class="text-[10px] text-slate-500 font-black uppercase tracking-wider">Previous</div>
+            <div id="block-prev-val" class="blockvol-prev mt-1">--</div>
+          </div>
+
+          <div class="text-center">
+            <div class="text-[10px] text-slate-500 font-black uppercase tracking-wider">Current</div>
+            <div id="block-current-val" class="text-3xl font-black text-white font-mono leading-none mt-1 whitespace-nowrap">0h 00m</div>
+          </div>
+
+          <div class="text-right">
+            <div class="text-[10px] text-slate-500 font-black uppercase tracking-wider">Next</div>
+            <div id="block-next-pct" class="text-[12px] font-black font-mono mt-1"></div>
+            <div id="block-next-val" class="blockvol-next mt-1 whitespace-nowrap">--</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 shrink-0">
+    <div class="glass-card p-5 rounded-3xl border-t-4 border-blue-500 flex flex-col justify-between">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center gap-3 text-blue-400">
+          <span class="material-symbols-outlined text-2xl font-bold">pool</span>
+          <h4 class="text-lg font-black uppercase tracking-tighter">Swim</h4>
+          <span id="target-swim-header" class="text-slate-500 text-xs font-mono font-bold ml-2">--:--</span>
+        </div>
+        <div class="text-right">
+          <p class="text-[8px] text-slate-500 uppercase font-black">Actual</p>
+          <p id="act-swim-val" class="text-sm font-mono font-bold text-slate-200">0:00</p>
+        </div>
+      </div>
+      <div class="flex items-baseline justify-between py-1">
+        <div class="text-6xl font-black text-white leading-none" id="req-swim">--:--</div>
+        <div class="text-right">
+          <p class="text-[8px] text-slate-500 uppercase font-black">Remaining</p>
+          <p id="rem-swim-val" class="text-sm font-mono font-bold text-blue-400">--:--</p>
+        </div>
+      </div>
+      <div class="relative w-full bg-blue-500/10 h-3 rounded-full mt-2 overflow-hidden flex items-center">
+        <div id="prog-swim" class="h-full bg-blue-500 transition-all duration-1000" style="width: 0%"></div>
+        <span id="pct-swim" class="absolute right-2 progress-label text-blue-100">0%</span>
+      </div>
+    </div>
+
+    <div class="glass-card p-5 rounded-3xl border-t-4 border-amber-500 flex flex-col justify-between">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center gap-3 text-amber-400">
+          <span class="material-symbols-outlined text-2xl font-bold">directions_bike</span>
+          <h4 class="text-lg font-black uppercase tracking-tighter">Bike</h4>
+          <span id="target-bike-header" class="text-slate-500 text-xs font-mono font-bold ml-2">--:--</span>
+        </div>
+        <div class="text-right">
+          <p class="text-[8px] text-slate-500 uppercase font-black">Actual</p>
+          <p id="act-bike-val" class="text-sm font-mono font-bold text-slate-200">0:00</p>
+        </div>
+      </div>
+      <div class="flex items-baseline justify-between py-1">
+        <div class="text-6xl font-black text-white leading-none" id="req-bike">--:--</div>
+        <div class="text-right">
+          <p class="text-[8px] text-slate-500 uppercase font-black">Remaining</p>
+          <p id="rem-bike-val" class="text-sm font-mono font-bold text-amber-400">--:--</p>
+        </div>
+      </div>
+      <div class="relative w-full bg-amber-500/10 h-3 rounded-full mt-2 overflow-hidden flex items-center">
+        <div id="prog-bike" class="h-full bg-amber-500 transition-all duration-1000" style="width: 0%"></div>
+        <span id="pct-bike" class="absolute right-2 progress-label text-amber-100">0%</span>
+      </div>
+    </div>
+
+    <div class="glass-card p-5 rounded-3xl border-t-4 border-rose-500 flex flex-col justify-between">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center gap-3 text-rose-400">
+          <span class="material-symbols-outlined text-2xl font-bold">directions_run</span>
+          <h4 class="text-lg font-black uppercase tracking-tighter">Run</h4>
+          <span id="target-run-header" class="text-slate-500 text-xs font-mono font-bold ml-2">--:--</span>
+        </div>
+        <div class="text-right">
+          <p class="text-[8px] text-slate-500 uppercase font-black">Actual</p>
+          <p id="act-run-val" class="text-sm font-mono font-bold text-slate-200">0:00</p>
+        </div>
+      </div>
+      <div class="flex items-baseline justify-between py-1">
+        <div class="text-6xl font-black text-white leading-none" id="req-run">--:--</div>
+        <div class="text-right">
+          <p class="text-[8px] text-slate-500 uppercase font-black">Remaining</p>
+          <p id="rem-run-val" class="text-sm font-mono font-bold text-rose-400">--:--</p>
+        </div>
+      </div>
+      <div class="relative w-full bg-rose-500/10 h-3 rounded-full mt-2 overflow-hidden flex items-center">
+        <div id="prog-run" class="h-full bg-rose-500 transition-all duration-1000" style="width: 0%"></div>
+        <span id="pct-run" class="absolute right-2 progress-label text-rose-100">0%</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="glass-card p-5 rounded-3xl border-l-4 border-emerald-500 shrink-0">
+    <form id="training-form" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+      <input type="text" id="input-swim" placeholder="Swim h:mm" class="bg-white/5 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-blue-500 text-sm font-mono w-full">
+      <input type="text" id="input-bike" placeholder="Bike h:mm" class="bg-white/5 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-amber-500 text-sm font-mono w-full">
+      <input type="text" id="input-run" placeholder="Run h:mm" class="bg-white/5 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-rose-500 text-sm font-mono w-full">
+      <button type="submit" class="bg-emerald-500 hover:bg-emerald-600 text-slate-900 font-black py-3 rounded-xl uppercase text-xs tracking-widest">Update</button>
+    </form>
+  </div>
+</main>
+
+<script>
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzTAMpAOWgp0tFw-OmHdaWmA5Od8oBWNKjmsbBkQwoldUjLAsi99M64d5TM9a7o3vsO_A/exec";
+const KONA_DATE = new Date("October 10, 2026 07:00:00");
+const GENEVA_DATE = new Date("July 5, 2026 08:00:00");
+let activeWeekNum = null;
+
+function parseTime(input) {
+  if (!input) return 0;
+  if (input instanceof Date || (typeof input === 'string' && input.includes('T'))) {
+    const d = new Date(input); return (d.getHours() * 60) + d.getMinutes();
+  }
+  if (typeof input === 'string' && input.includes(':')) {
+    const p = input.split(':'); return (parseInt(p[0], 10) * 60) + parseInt(p[1], 10);
+  }
+  return 0;
+}
+function cleanDisplay(val) {
+  if (!val || val === 0) return "0:00";
+  if (val instanceof Date || (typeof val === 'string' && val.includes('T'))) {
+    const d = new Date(val); return `${d.getHours()}:${d.getMinutes().toString().padStart(2, '0')}`;
+  }
+  return val.toString().split('.')[0];
+}
+function minsToHM(mins) {
+  const h = Math.floor(Math.abs(mins) / 60); const m = Math.round(Math.abs(mins) % 60);
+  return `${mins < 0 ? '-' : ''}${h}:${m.toString().padStart(2, '0')}`;
+}
+function parseWeekStartDate(v) {
+  if (!v && v !== 0) return null;
+  if (typeof v === 'number' && isFinite(v)) {
+    const epoch = new Date(Date.UTC(1899, 11, 30));
+    const d = new Date(epoch.getTime() + v * 24 * 60 * 60 * 1000);
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  }
+  if (v instanceof Date) return new Date(v.getFullYear(), v.getMonth(), v.getDate());
+  if (typeof v === 'string') {
+    const iso = v.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (iso) return new Date(parseInt(iso[1], 10), parseInt(iso[2], 10) - 1, parseInt(iso[3], 10));
+    const d = new Date(v.trim()); if (!isNaN(d.getTime())) return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  }
+  return null;
+}
+function stripHeaderRow(rows) {
+  if (!Array.isArray(rows) || rows.length === 0) return rows;
+  return String(rows[0][0] ?? '').toLowerCase().includes('week') ? rows.slice(1) : rows;
+}
+function setInsight(id, text, colorClass) {
+  const el = document.getElementById(id); if (!el) return;
+  el.innerText = text; el.className = `insight-text uppercase font-bold leading-tight ${colorClass || 'text-slate-400'}`;
+}
+function parsePercentLike(v) {
+  if (v === null || v === undefined || v === "") return null;
+  if (typeof v === 'number' && isFinite(v)) return Math.abs(v) <= 1 ? v * 100 : v;
+  return parseFloat(String(v).replace('%', '').trim());
+}
+function parseRatios3(v) {
+  if (v === null || v === undefined || v === "") return null;
+  const s = String(v).trim();
+  const nums = s.match(/-?\d+(\.\d+)?/g);
+  if (!nums || nums.length < 3) return null;
+  let a = parseFloat(nums[0]), b = parseFloat(nums[1]), c = parseFloat(nums[2]);
+  const sum = a + b + c;
+  if (sum > 0 && sum <= 1.5) { a *= 100; b *= 100; c *= 100; }
+  return [a, b, c];
+}
+function fmtHM(mins) {
+  const h = Math.floor(mins / 60);
+  const m = Math.round(mins % 60);
+  return `${h}h ${m.toString().padStart(2, '0')}m`;
+}
+function fmtDeltaPct(currMins, prevMins) {
+  if (!prevMins || prevMins <= 0) return null;
+  const d = ((currMins - prevMins) / prevMins) * 100;
+  const sign = d > 0 ? "+" : "";
+  const cls = d > 0 ? "text-blue-400" : (d < 0 ? "text-emerald-400" : "text-slate-400");
+  return { txt: `${sign}${d.toFixed(0)}%`, cls };
+}
+
+async function init() {
+  const now = new Date(); const month = now.toLocaleString('default', { month: 'long' });
+  const gap = "&nbsp;".repeat(85);
+  document.getElementById('dynamic-marquee').innerHTML = `3.8k Swim, 180k Bike, 42K Run${gap}"Cyril loves you"${gap}"Anything is Possible"${gap}"Success is built in ${month}"`;
+  document.getElementById('countdown').innerText = Math.max(0, Math.floor((KONA_DATE - now) / (1000 * 60 * 60 * 24)));
+  document.getElementById('latour-countdown').innerText = Math.max(0, Math.floor((GENEVA_DATE - now) / (1000 * 60 * 60 * 24)));
+  try {
+    const res = await fetch(SCRIPT_URL); const data = await res.json();
+    processData(data.plan, data.actual);
+  } catch (e) { console.error(e); }
+}
+
+function processData(plan, actual) {
+  plan = stripHeaderRow(plan); actual = stripHeaderRow(actual);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+
+  let currentIdx = plan.findIndex(p => {
+    const start = parseWeekStartDate(p[2]); if (!start) return false;
+    const end = new Date(start.getTime()); end.setDate(start.getDate() + 7);
+    return today >= start && today < end;
+  });
+  if (currentIdx === -1) currentIdx = 0;
+
+  const todayRow = plan[currentIdx];
+  activeWeekNum = todayRow[0];
+
+  setupUI(plan.filter(p => p[3] === todayRow[3]), todayRow, activeWeekNum, plan);
+  setupInsights(actual ? actual[currentIdx] : null, todayRow);
+}
+
+function setupUI(blockWeeks, todayRow, activeWeekNum, fullPlan) {
+  const chart = document.getElementById('block-chart');
+  const labels = document.getElementById('block-weeks-labels');
+  chart.innerHTML = "";
+  labels.innerHTML = "";
+
+  let totalBlockDisplayMins = 0;
+  let totalBlockPlanMins = 0;
+
+  const maxMins = Math.max(...blockWeeks.map(w => parseTime(w[6])));
+
+  blockWeeks.forEach((week, idx) => {
+    const mins = parseTime(week[6]);
+    totalBlockDisplayMins += mins;
+
+    const planMins = (week && isFinite(week[5])) ? Number(week[5]) : mins;
+    totalBlockPlanMins += planMins;
+
+    const prevMins = idx > 0 ? parseTime(blockWeeks[idx - 1][6]) : 0;
+    const delta = idx > 0 ? fmtDeltaPct(mins, prevMins) : null;
+
+    const isCurrent = week[0] == activeWeekNum;
+    const isRecovery = String(week?.[1] || "").toLowerCase().includes("recovery");
+    const height = (mins / (maxMins * 1.2)) * 100;
+
+    const barWrap = document.createElement('div');
+    barWrap.className = "flex-1 flex flex-col items-center h-full justify-end group cursor-pointer";
+
+    let barClass = "";
+    if (isRecovery) {
+      barClass = isCurrent ? "bg-emerald-500 border-emerald-400" : "bg-emerald-500/20 border-emerald-500/30";
+    } else {
+      barClass = isCurrent ? "bg-amber-500 border-amber-400" : "bg-amber-500/20 border-amber-500/30";
+    }
+
+    const volTxt = cleanDisplay(week[6]);
+
+    barWrap.innerHTML = `
+      <div class="relative w-full h-full flex items-end justify-center" style="--bar-h:${height}%">
+        <div class="absolute -top-10 opacity-0 group-hover:opacity-100 bg-black text-[9px] px-2 py-1 rounded border border-white/10 z-10 whitespace-nowrap">${volTxt}</div>
+
+        ${delta ? `
+          <div class="week-delta ${delta.cls} absolute left-1/2 -translate-x-1/2"
+               style="bottom: calc(var(--bar-h) + 10px);">
+            ${delta.txt}
+          </div>` : ``}
+
+        <div class="chart-bar relative w-full max-w-[45px] border ${barClass}" style="height: ${height}%">
+          <span class="week-vol-inbar">${volTxt}</span>
+        </div>
+      </div>`;
+    chart.appendChild(barWrap);
+
+    const lbl = document.createElement('span');
+    lbl.className = `flex-1 text-center ${isCurrent ? 'text-amber-400 font-black' : ''}`;
+    lbl.innerText = `W${week[0]}`;
+    labels.appendChild(lbl);
+  });
+
+  document.getElementById('block-title').innerText = `Block ${todayRow[3]}`;
+  document.getElementById('phase-label').innerText = `PHASE: ${todayRow[4]}`;
+
+  document.getElementById('block-current-val').innerText = fmtHM(totalBlockDisplayMins);
+
+  let prevVal = "--";
+  let nextVal = "--";
+  let nextPctHtml = "";
+
+  if (Array.isArray(fullPlan) && fullPlan.length) {
+    const blocks = [];
+    fullPlan.forEach(r => {
+      const key = r?.[3];
+      if (key !== null && key !== undefined && String(key).trim() !== "" && !blocks.includes(key)) blocks.push(key);
+    });
+
+    const curKey = todayRow?.[3];
+    const curIdx = blocks.indexOf(curKey);
+
+    const prevKey = (curIdx > 0) ? blocks[curIdx - 1] : null;
+    const nextKey = (curIdx >= 0 && curIdx < blocks.length - 1) ? blocks[curIdx + 1] : null;
+
+    if (prevKey) {
+      const prevWeeks = fullPlan.filter(p => p?.[3] === prevKey);
+      const prevPlanMins = prevWeeks.reduce((acc, r) => acc + ((r && isFinite(r[5])) ? Number(r[5]) : 0), 0);
+      if (prevPlanMins > 0) prevVal = fmtHM(prevPlanMins);
+    }
+
+    if (!nextKey) {
+      nextVal = "Race time is around the corner";
+      nextPctHtml = "";
+    } else {
+      const nextWeeks = fullPlan.filter(p => p?.[3] === nextKey);
+      const nextPlanMins = nextWeeks.reduce((acc, r) => acc + ((r && isFinite(r[5])) ? Number(r[5]) : 0), 0);
+      if (nextPlanMins > 0) nextVal = fmtHM(nextPlanMins);
+
+      if (nextPlanMins > 0 && totalBlockPlanMins > 0) {
+        const deltaPct = ((nextPlanMins - totalBlockPlanMins) / totalBlockPlanMins) * 100;
+        const sign = deltaPct > 0 ? "+" : "";
+        const cls = deltaPct > 0 ? "text-blue-400" : (deltaPct < 0 ? "text-emerald-400" : "text-slate-300");
+        nextPctHtml = `<span class="${cls}">${sign}${deltaPct.toFixed(0)}%</span>`;
+      }
+    }
+  }
+
+  document.getElementById('block-prev-val').innerText = prevVal;
+  document.getElementById('block-next-val').innerText = nextVal;
+  document.getElementById('block-next-pct').innerHTML = nextPctHtml;
+}
+
+function setupInsights(aRow, pRow) {
+  setInsight('insight-exec', 'Awaiting Data', 'text-slate-400');
+  setInsight('insight-baseline', 'Awaiting Data', 'text-slate-400');
+  setInsight('insight-wow', 'Awaiting Data', 'text-slate-400');
+  setInsight('insight-acr', 'Awaiting Data', 'text-slate-400');
+  setInsight('insight-balance', 'Awaiting Data', 'text-slate-400');
+
+  const planSwim = parseTime(pRow[7]);
+  const planBike = parseTime(pRow[8]);
+  const planRun = parseTime(pRow[9]);
+  const isRecoveryWeek = String(pRow?.[1] || "").toLowerCase().includes("recovery");
+  const planTotalMins = (pRow && isFinite(pRow[5])) ? Number(pRow[5]) : null;
+
+  const wkLabel = `Week ${activeWeekNum ?? ''}`.trim();
+  document.getElementById('target-swim-header').innerText = wkLabel;
+  document.getElementById('target-bike-header').innerText = wkLabel;
+  document.getElementById('target-run-header').innerText = wkLabel;
+
+  document.getElementById('req-swim').innerText = cleanDisplay(pRow[7]);
+  document.getElementById('req-bike').innerText = cleanDisplay(pRow[8]);
+  document.getElementById('req-run').innerText = cleanDisplay(pRow[9]);
+
+  if (!aRow) return;
+
+  const actSwim = parseTime(aRow[3]);
+  const actBike = parseTime(aRow[4]);
+  const actRun = parseTime(aRow[5]);
+  const actTotalMins = parseTime(aRow[6]);
+
+  document.getElementById('act-swim-val').innerText = cleanDisplay(aRow[3]);
+  document.getElementById('act-bike-val').innerText = cleanDisplay(aRow[4]);
+  document.getElementById('act-run-val').innerText = cleanDisplay(aRow[5]);
+
+  const updateSport = (id, act, plan) => {
+    const hasPlan = (typeof plan === 'number' && isFinite(plan) && plan > 0);
+    const rawPct = hasPlan ? (act / plan) * 100 : 0;
+    const barPct = hasPlan ? Math.min(rawPct, 100) : 0;
+
+    const progEl = document.getElementById(`prog-${id}`);
+    progEl.style.width = barPct + '%';
+    document.getElementById(`pct-${id}`).innerText = Math.round(rawPct) + '%';
+
+    const glowMap = { swim:"rgba(59,130,246,0.85)", bike:"rgba(245,158,11,0.85)", run:"rgba(244,63,94,0.85)" };
+    if (hasPlan && rawPct >= 100) {
+      progEl.classList.add('goal-glow');
+      progEl.style.setProperty('--glow-color', glowMap[id] || 'rgba(255,255,255,0.35)');
+    } else {
+      progEl.classList.remove('goal-glow');
+      progEl.style.removeProperty('--glow-color');
+    }
+
+    const remEl = document.getElementById(`rem-${id}-val`);
+    const remWrap = remEl ? remEl.closest('div') : null;
+
+    if (!hasPlan) {
+      if (remEl) remEl.innerText = '--:--';
+      if (remWrap) remWrap.style.visibility = 'visible';
+      return;
+    }
+    if (rawPct >= 100) {
+      if (remWrap) remWrap.style.visibility = 'hidden';
+    } else {
+      if (remEl) remEl.innerText = minsToHM(plan - act);
+      if (remWrap) remWrap.style.visibility = 'visible';
+    }
+  };
+
+  updateSport('swim', actSwim, planSwim);
+  updateSport('bike', actBike, planBike);
+  updateSport('run', actRun, planRun);
+
+  const hasAnyActual = (actSwim > 0 || actBike > 0 || actRun > 0 || actTotalMins > 0);
+
+  if (planTotalMins && planTotalMins > 0) {
+    if (!hasAnyActual) setInsight('insight-exec', 'Not Started', 'text-slate-400');
+    else {
+      const pct = actTotalMins / planTotalMins;
+      const pctTxt = `${Math.round(pct * 100)}%`;
+      if (pct >= 0.90) setInsight('insight-exec', `${pctTxt} — On Pace`, 'text-emerald-400');
+      else if (pct >= 0.70) setInsight('insight-exec', `${pctTxt} — Catching Up`, 'text-amber-400');
+      else setInsight('insight-exec', `${pctTxt} — Off Plan`, 'text-rose-400');
+    }
+  }
+
+  const baselineRaw = aRow[11];
+  if (baselineRaw !== null && baselineRaw !== undefined && String(baselineRaw).trim() !== "") {
+    setInsight('insight-baseline', `${typeof baselineRaw === 'number' ? minsToHM(baselineRaw) : cleanDisplay(baselineRaw)} / week`, 'text-slate-200');
+  }
+
+  const wowPct = parsePercentLike(aRow[8]);
+  if (wowPct !== null) {
+    const wowTxt = `${wowPct > 0 ? "+" : ""}${wowPct.toFixed(0)}%`;
+    if (isRecoveryWeek) setInsight('insight-wow', `${wowTxt} — ${wowPct <= 12 ? 'Controlled' : 'Too High'}`, wowPct <= 12 ? 'text-emerald-400' : 'text-rose-400');
+    else setInsight('insight-wow', `${wowTxt} — ${wowPct >= 8 && wowPct <= 12 ? 'Perfect Ramp' : 'Off Target'}`, (wowPct >= 8 && wowPct <= 12) ? 'text-emerald-400' : 'text-rose-400');
+  }
+
+  const acr = (aRow[12] !== null && aRow[12] !== undefined && String(aRow[12]).trim() !== "") ? parseFloat(aRow[12]) : null;
+  if (acr !== null && isFinite(acr)) {
+    if (isRecoveryWeek) setInsight('insight-acr', acr < 0.95 ? 'Recovery Week' : (acr <= 1.10 ? 'On Track' : 'High Load'), acr <= 1.10 ? 'text-emerald-400' : 'text-amber-400');
+    else setInsight('insight-acr', (acr >= 0.90 && acr <= 1.10) ? 'On Track' : (acr <= 1.25 ? 'High Load' : 'Spike Risk'), acr <= 1.10 ? 'text-emerald-400' : (acr <= 1.25 ? 'text-amber-400' : 'text-rose-400'));
+  }
+
+  const wk = parseRatios3(aRow[9]);
+  const base = parseRatios3(aRow[10]);
+  if (wk && base) {
+    const dev = [wk[0] - base[0], wk[1] - base[1], wk[2] - base[2]];
+    const names = ["Swim", "Bike", "Run"];
+    const maxAbs = Math.max(...dev.map(Math.abs));
+    if (maxAbs <= 2) setInsight('insight-balance', 'Balanced', 'text-emerald-400');
+    else {
+      const picks = dev.map((d, i) => Math.abs(d) > 2 ? `${names[i]} ${d > 0 ? 'Over' : 'Under'}` : null).filter(Boolean);
+      setInsight('insight-balance', picks.slice(0, 2).join(' • '), maxAbs <= 5 ? 'text-amber-400' : 'text-rose-400');
+    }
+  }
+}
+
+/* IMPORTANT FIX:
+   Only send fields the user actually filled.
+   Do NOT default missing fields to "0:00" (that overwrites existing sheet values). */
+document.getElementById('training-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const swimVal = document.getElementById('input-swim').value.trim();
+  const bikeVal = document.getElementById('input-bike').value.trim();
+  const runVal  = document.getElementById('input-run').value.trim();
+
+  const data = { week: activeWeekNum };
+  if (swimVal !== "") data.swim = swimVal;
+  if (bikeVal !== "") data.bike = bikeVal;
+  if (runVal  !== "") data.run  = runVal;
+
+  await fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(data) });
+  location.reload();
+});
+
+init();
+</script>
+</body>
+</html>
