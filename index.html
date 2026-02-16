@@ -83,7 +83,7 @@ body {
 
 <body class="p-4 md:p-6 gap-4">
 
-<header class="flex flex-nowrap justify-between items-center border-b border-white/5 pb-4 shrink-0 overflow-hidden">
+<header class="flex flex-col lg:flex-row lg:justify-between lg:items-center border-b border-white/5 pb-4 shrink-0 overflow-hidden">
   <button type="button"
           onclick="location.reload()"
           class="flex items-center gap-6 shrink-0 text-left cursor-pointer select-none"
@@ -104,7 +104,7 @@ body {
     <div id="dynamic-marquee" class="marquee-content font-serif italic text-base uppercase tracking-[0.2em] opacity-90"></div>
   </div>
 
-  <div class="flex gap-4 shrink-0">
+  <div class="flex gap-4 shrink-0 w-full mt-3 lg:mt-0 lg:w-auto lg:justify-end">
     <a href="https://www.genevetriathlon.ch/races/half" target="_blank" class="glass-card px-5 py-2 rounded-2xl border border-blue-500/30 text-center min-w-[95px]">
       <span id="latour-countdown" class="block text-2xl font-black text-blue-400">--</span>
       <span class="text-slate-500 text-[8px] font-bold uppercase">Geneva</span>
@@ -116,8 +116,8 @@ body {
   </div>
 </header>
 
-<main class="flex-grow flex flex-col gap-4 overflow-hidden">
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 h-1/2 min-h-0">
+<main class="flex-grow flex flex-col gap-4 overflow-y-auto lg:overflow-hidden">
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:h-1/2">
     <div class="glass-card p-5 rounded-3xl lg:col-span-2 flex flex-col min-h-0">
       <div class="flex justify-between items-center mb-2 shrink-0">
         <h3 class="font-bold text-xl uppercase tracking-tight" id="block-title">Block ---</h3>
